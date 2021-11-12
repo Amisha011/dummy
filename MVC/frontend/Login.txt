@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            Login
+        </title>
+    </head>
+    <body>
+        <input type="email" placeholder="Email" id="email"><br />
+        <input type="password" placeholder="Password" id="password"><br />
+        <button id="loginBtn">Login</button>
+    </body>
+    <script>
+        var email=document.getElementById("email");
+        var password=document.getElementById("password");
+        var loginBtn=document.getElementById("loginBtn");
+
+        //add event on login
+        loginBtn.addEventListener("click",function(e){
+            e.preventDefault();
+            //payload
+            var data={
+                email:email.value,
+                password:password.value
+            }
+            console.log("data=",data);
+
+            //url
+            const url="http://localhost:8081/api/user/login";
+            fetch(url,{
+                method:"POST",
+                headers:{
+                    "Content-Type":"application/json"
+                },
+                body:JSON.stringify(data)
+            })
+            .then(response=>{
+                return response.json()
+            })
+            .then(data=>{
+                console.log(data);
+            })
+            .catch(Err=>{
+                console.log(Err);
+            })
+        })
+    </script>
+</html>

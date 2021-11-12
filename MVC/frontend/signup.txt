@@ -1,0 +1,56 @@
+<!Doctype html>
+<html>
+    <head>
+        <title>Signup</title>
+    </head>
+    <body>
+        <form>
+            <input type="text" placeholder="Full Name" id="name1"><br />
+            <input type="tel" placeholder="Phone Number" id="number"><br />
+            <input type="email" placeholder="Email" id="email"><br />
+            <input type="password" placeholder="Password" id="password"><br />
+            <button id="signupBtn">Signup</button>
+        </form>
+        <a href="login.html">Login</a>
+    </body>
+    <script>
+        var name1=document.getElementById("name1");
+        var phoneNumber=document.getElementById("number");
+        var email=document.getElementById("email");
+        var password=document.getElementById("password");
+        var signupBtn=document.getElementById("signupBtn");
+
+        //add event on signup
+        signupBtn.addEventListener("click",function(e){
+            e.preventDefault();
+            //create a object of userdata
+            var data={
+                name:name1.value,
+                phoneNumber:phoneNumber.value,
+                email:email.value,
+                password:password.value
+            }
+            console.log("data=",data);
+
+            //url of api
+            const url="http://localhost:8081/api/user/signup";
+
+            fetch(url,{
+                method:"POST",
+                headers:{
+                    "Content-Type":"application/json"
+                },
+                body:JSON.stringify(data)
+            })
+            .then(response=>{
+                return response.json()
+            })
+            .then(data=>{
+                console.log("userdata=",data);
+            })
+            .catch(err=>{
+                console.log(err);
+            })
+        })
+    </script>
+</html>

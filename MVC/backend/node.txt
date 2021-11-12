@@ -1,0 +1,157 @@
+const express = require("express");
+const bodyParser = require("body-parser");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const jwt=require("jsonwebtoken");
+const bcrypt=require("bcryptjs")
+const User=require("./src/models/user")
+
+//create server
+const app = express();
+
+//use middlewares
+app.use(bodyParser.json());
+app.use(cors());
+
+
+//db url
+const dbURL = "mongodb://127.0.0.1:27017/mvcDB";
+
+//connect with mongoose
+mongoose
+  .connect(dbURL, {
+    useUnifiedTopology: true,
+    useNewUrlParser: true,
+    useCreateIndex: true,
+    useFindAndModify: false,
+  })
+  .then(() => {
+    console.log("Connected to MongoDb");
+
+    // signup api create
+    app.post("/api/user/signup",async (req,res)=>{
+        const {name,phoneNumber,email,password}=req.body;
+        console.log(req.body);
+
+        //check if user exist or not
+        let existingUser;
+        try{
+            existingUser=await User.findOne({email:email});
+        }
+        catch(err){
+            return res.status(500).json("Error in checking user");
+        }
+        console.log(existingUser);
+        //if user exists
+        if(existingUser){
+            return res.status(422).json("User already exists");
+        }
+
+        //as user not exist so convert its password in hash format
+        let hashedPassword;
+        try{
+            hashedPassword=await bcrypt.hash(password,12);
+        }
+        catch(err){
+            return res.status(500).json("Error in hashing of password");
+        }
+
+        //now save user in database
+        const createdUser=new User({
+            name,
+            phoneNumber,
+            email,
+            password:hashedPassword
+        })
+        try{
+            await createdUser.save();
+        }
+        catch(err){
+            return res.status(500).json("Error in saving new user");
+        }
+
+        //token generate
+        let token;
+        try{
+            token=jwt.sign(
+                {userId:createdUser.id,email:createdUser.email},
+                "myToken123456789",
+                {expiresIn:'21d'}
+            )
+        }
+        catch(err){
+            return res.status(500).json("Error in token generation");
+        }
+
+        res.status(201).json({
+            userId:createdUser.id,
+            name:createdUser.name,
+            phoneNumber:createdUser.phoneNumber,
+            email:createdUser.email,
+            token:token
+        })
+    });
+
+    //login api
+    app.post("/api/user/login",async (req,res)=>{
+        const {email,password}=req.body;
+        console.log(req.body);
+
+        //check user exist or not
+        let existingUser;
+        try{
+            existingUser=await User.findOne({email:email});
+        }
+        catch(err){
+            return res.status(500).json("Error in checking user");
+        }
+
+        if(!existingUser){
+            return res.status(401).json("User does not exist please signup");
+        }
+
+        //if user exist then check password is valid or not
+        let isValidPassword;
+        try{
+            isValidPassword=await bcrypt.compare(password,existingUser.password);
+        }
+        catch(err){
+            return res.status(500).json("Error in comparing password");
+        }
+
+        //is password not valid
+        if(!isValidPassword){
+            return res.status(401).json("Password doesn't match");
+        }
+
+        //generate token
+        let token;
+        try{
+            token=jwt.sign(
+                {userId:existingUser.id,email:existingUser.email},
+                "myToken123456789",
+                {expiresIn:'21d'}
+            )
+        }
+        catch(err){
+            return res.status(500).json("Error in token generation");
+        }
+
+        //return response
+        res.status(201).json({
+            userId:existingUser.id,
+            name:existingUser.name,
+            phoneNumber:existingUser.phoneNumber,
+            email:existingUser.email,
+            token:token
+        })
+    });
+
+    //run server
+    app.listen(8081, () => {
+      console.log("Server has started");
+    });
+   })
+   .catch(err=>{
+       console.log(err);
+   })
